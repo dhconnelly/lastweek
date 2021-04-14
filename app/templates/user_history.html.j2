@@ -3,17 +3,15 @@
 
 {% block page_content %}
 <div class="page-header">
-    <h1>All snippets!</h1>
     <div class="list-group">
         {% for snippet in snippets %}
         <div class="list-group-item">
             <h5>week of {{ snippet["week_begin"] }}</h5>
+            {% set y = snippet["week_begin"].year %}
+            {% set m = snippet["week_begin"].month %}
+            {% set d = snippet["week_begin"].day %}
+            <a href="{{ url_for('.edit', id=snippet['id'], y=y, m=m, d=d) }}">(edit)</a>
             <p class="mb-1">{{ snippet["content"] }}</p>
-            <small>
-                <a href="{{ url_for('user_history', id=snippet['id']) }}">
-                    {{ snippet["email"] }}
-                </a>
-            </small>
         </div>
         {% endfor %}
     </div>
