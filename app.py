@@ -1,4 +1,5 @@
-from datetime import datetime
+import os
+from datetime import date, datetime
 from flask import (
     Flask,
     request,
@@ -10,6 +11,7 @@ from flask import (
 )
 from flask_bootstrap import Bootstrap
 from flask_moment import Moment
+from flask_sqlalchemy import SQLAlchemy
 from flask_wtf import FlaskForm
 from flask_wtf.recaptcha import validators
 from wtforms import StringField, SubmitField
@@ -17,11 +19,44 @@ from wtforms.validators import DataRequired
 
 app = Flask(__name__)
 
-# TODO: move this to env var
+# TODO: move these to env vars
 app.config["SECRET_KEY"] = "der geist der stets verneint"
+basedir = os.path.abspath(os.path.dirname(__file__))
+db_uri = "sqlite:///" + os.path.join(basedir, "data.sqlite")
+app.config["SQLALCHEMY_DATABASE_URI"] = db_uri
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 bootstrap = Bootstrap(app)
 moment = Moment(app)
+db = SQLAlchemy(app)
+
+
+def iso_week_begin(d: date) -> date:
+    iso = d.isocalendar()
+    return date.fromisocalendar(iso[0], iso[1], 1)
+
+
+class User(db.Model):
+    __tablename__ = "users"
+    id = db.Column(db.Integer, primary_key=True, nullable=False)
+    email = db.Column(db.String(320), unique=True, index=True, nullable=False)
+    name = db.Column(db.String(255), nullable=False)
+
+    snippets = db.relationship("Snippet", backref="user", lazy="dynamic")
+
+    def __repr__(self):
+        return f"<User {repr(self.email)}>"
+
+
+class Snippet(db.Model):
+    __tablename__ = "snippets"
+    id = db.Column(db.Integer, primary_key=True, nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    text = db.Column(db.UnicodeText)
+    week_begin = db.Column(db.Date, nullable=False, index=True)
+
+    def __repr__(self):
+        return f"<Snippet {repr(self.user.email)} {repr(self.week_begin)}>"
 
 
 class SnippetsForm(FlaskForm):
