@@ -124,17 +124,6 @@ def edit_week(form, week_begin, user):
     return render_edit_form(form, user, week_begin, snippet and snippet.text)
 
 
-def edit_this_week(form, user):
-    # stay on the current week, in case we just submitted an edit. but clear
-    # the session week afterwards so we don't stay there forever
-    if session_week := session.get("week_begin"):
-        week_begin = date.fromisoformat(session_week)
-        del session["week_begin"]
-    else:
-        week_begin = iso_week_begin(date.today())
-    return edit_week(form, week_begin, user)
-
-
 @app.route("/user/<id>/week/<int:y>/<int:m>/<int:d>", methods=["GET", "POST"])
 def edit(id, y, m, d):
     user = User.query.get(id)
