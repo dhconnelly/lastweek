@@ -86,6 +86,7 @@ def internal_server_error(e):
 def render_snippet(md, snippet):
     return {
         "email": snippet.user.email,
+        "id": snippet.user.id,
         "week_begin": snippet.week_begin,
         "content": snippet and md.convert(snippet.text),
     }
@@ -106,6 +107,7 @@ def render_edit_form(form, user, week_begin, text):
     return render_template(
         "user.html.j2",
         name=user.name,
+        user_id=user.id,
         week_begin=week_begin,
         content=text and md.convert(text),
         form=form,
@@ -117,6 +119,11 @@ def lookup_snippet(user, week_begin):
     return snippet.first()
 
 
+def edit_week(form, week_begin, user):
+    snippet = lookup_snippet(user, week_begin)
+    return render_edit_form(form, user, week_begin, snippet and snippet.text)
+
+
 def edit_this_week(form, user):
     # stay on the current week, in case we just submitted an edit. but clear
     # the session week afterwards so we don't stay there forever
@@ -125,25 +132,26 @@ def edit_this_week(form, user):
         del session["week_begin"]
     else:
         week_begin = iso_week_begin(date.today())
-    snippet = lookup_snippet(user, week_begin)
-    return render_edit_form(form, user, week_begin, snippet and snippet.text)
+    return edit_week(form, week_begin, user)
 
 
-@app.route("/user/<id>", methods=["GET", "POST"])
-def user(id):
+@app.route("/user/<id>/week/<int:y>/<int:m>/<int:d>", methods=["GET", "POST"])
+def edit(id, y, m, d):
     user = User.query.get(id)
+    if not user:
+        return render_template("404.html.j2"), 404
+
+    # redirect to the first day of the week if necessary
     form = SnippetsForm()
+    requested_date = date(y, m, d)
+    week_begin = iso_week_begin(requested_date)
+    if requested_date != week_begin:
+        (y, m, d) = (week_begin.year, week_begin.month, week_begin.day)
+        return redirect(url_for("edit", id=user.id, y=y, m=m, d=d))
 
     # if this is just a get, render the editor for this week
     if not form.validate_on_submit():
-        return edit_this_week(form, user)
-
-    # saving snippet. use the week specified in the form
-    try:
-        week_begin = date.fromisoformat(form.week_begin.data)
-    except Exception as e:
-        flash("invalid week for snippet! data not saved. please retry.")
-        return edit_this_week(form, user)
+        return edit_week(form, week_begin, user)
 
     # overwrite the existing snippet if it exists
     snippet = lookup_snippet(user, week_begin)
@@ -152,10 +160,17 @@ def user(id):
     snippet.text = form.text.data
     db.session.add(snippet)
     db.session.commit()
+    return redirect(url_for("edit", id=user.id, y=y, m=m, d=d))
 
-    # redirect to editor but make the week sticky
-    session["week_begin"] = date.isoformat(week_begin)
-    return redirect(url_for("user", id=user.id))
+
+@app.route("/user/<id>", methods=["GET", "POST"])
+def user(id):
+    user = User.query.get(id)
+    if not user:
+        return render_template("404.html.j2"), 404
+    today = date.today()
+    (y, m, d) = (today.year, today.month, today.day)
+    return redirect(url_for("edit", id=user.id, y=y, m=m, d=d))
 
 
 @app.route("/user/<id>/history", methods=["GET", "POST"])

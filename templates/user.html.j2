@@ -4,10 +4,11 @@
 {% block page_content %}
 <div class="page-header">
     <h1>Hello, {{ name }}.</h1>
-    <h2>It's the week of {{ moment(week_begin).format("MMMM	Do, YYYY") }}</h2>
+    <h2>It's the week of {{ moment(week_begin, local=True).format("MMMM	Do, YYYY") }}</h2>
+    <a href="{{ url_for('user_history', id=user_id) }}">See all weeks</a>
+    {{ wtf.quick_form(form) }}
     {% if content %}
     <div>{{ content }}</div>
     {% endif %}
-    {{ wtf.quick_form(form) }}
 </div>
 {% endblock %}

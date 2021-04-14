@@ -9,7 +9,11 @@
         <div class="list-group-item">
             <h5>week of {{ snippet["week_begin"] }}</h5>
             <p class="mb-1">{{ snippet["content"] }}</p>
-            <small>{{ snippet["email"] }}</small>
+            <small>
+                <a href="{{ url_for('user_history', id=snippet['id']) }}">
+                    {{ snippet["email"] }}
+                </a>
+            </small>
         </div>
         {% endfor %}
     </div>
