@@ -3,13 +3,11 @@
 
 {% block page_content %}
 <div class="page-header">
-    <h1>All snippets!</h1>
     <div class="list-group">
         {% for snippet in snippets %}
         <div class="list-group-item">
             <h5>week of {{ snippet["week_begin"] }}</h5>
             <p class="mb-1">{{ snippet["content"] }}</p>
-            <small>{{ snippet["email"] }}</small>
         </div>
         {% endfor %}
     </div>

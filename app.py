@@ -15,7 +15,10 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_wtf import FlaskForm
 from flask_wtf.recaptcha import validators
 from wtforms import StringField, SubmitField
+from wtforms.fields.core import SelectField
+from wtforms.fields.simple import HiddenField, TextAreaField
 from wtforms.validators import DataRequired
+import markdown
 
 app = Flask(__name__)
 
@@ -59,9 +62,15 @@ class Snippet(db.Model):
         return f"<Snippet {repr(self.user.email)} {repr(self.week_begin)}>"
 
 
+@app.shell_context_processor
+def make_shell_context():
+    return dict(db=db, User=User, Snippet=Snippet)
+
+
 class SnippetsForm(FlaskForm):
-    snippet = StringField("What did you do?", validators=[DataRequired()])
-    submit = SubmitField("Submit")
+    text = TextAreaField("What have you done this week?")
+    week_begin = HiddenField()
+    submit = SubmitField("Save")
 
 
 @app.errorhandler(404)
@@ -74,24 +83,86 @@ def internal_server_error(e):
     return render_template("500.html.j2"), 500
 
 
-def render(name):
-    form = SnippetsForm()
-    if form.validate_on_submit():
-        old_snippet = session.get("snippet")
-        if old_snippet is not None and old_snippet != form.snippet.data:
-            flash("Updated snippet")
-        session["snippet"] = form.snippet.data
-        return redirect(url_for("index"))
-    return render_template(
-        "index.html.j2", name=name, form=form, snippet=session.get("snippet")
-    )
+def render_snippet(md, snippet):
+    return {
+        "email": snippet.user.email,
+        "week_begin": snippet.week_begin,
+        "content": snippet and md.convert(snippet.text),
+    }
 
 
 @app.route("/", methods=["GET", "POST"])
 def index():
-    return render("Stranger")
+    snippets = Snippet.query.order_by(Snippet.week_begin.desc()).all()
+    md = markdown.Markdown()
+    rendered = [render_snippet(md, s) for s in snippets]
+    return render_template("index.html.j2", snippets=rendered)
 
 
-@app.route("/user/<name>", methods=["GET", "POST"])
-def user(name):
-    return render(name)
+def render_edit_form(form, user, week_begin, text):
+    md = markdown.Markdown()
+    form.text.data = text
+    form.week_begin.data = week_begin
+    return render_template(
+        "user.html.j2",
+        name=user.name,
+        week_begin=week_begin,
+        content=text and md.convert(text),
+        form=form,
+    )
+
+
+def lookup_snippet(user, week_begin):
+    snippet = Snippet.query.filter_by(user_id=user.id, week_begin=week_begin)
+    return snippet.first()
+
+
+def edit_this_week(form, user):
+    # stay on the current week, in case we just submitted an edit. but clear
+    # the session week afterwards so we don't stay there forever
+    if session_week := session.get("week_begin"):
+        week_begin = date.fromisoformat(session_week)
+        del session["week_begin"]
+    else:
+        week_begin = iso_week_begin(date.today())
+    snippet = lookup_snippet(user, week_begin)
+    return render_edit_form(form, user, week_begin, snippet and snippet.text)
+
+
+@app.route("/user/<id>", methods=["GET", "POST"])
+def user(id):
+    user = User.query.get(id)
+    form = SnippetsForm()
+
+    # if this is just a get, render the editor for this week
+    if not form.validate_on_submit():
+        return edit_this_week(form, user)
+
+    # saving snippet. use the week specified in the form
+    try:
+        week_begin = date.fromisoformat(form.week_begin.data)
+    except Exception as e:
+        flash("invalid week for snippet! data not saved. please retry.")
+        return edit_this_week(form, user)
+
+    # overwrite the existing snippet if it exists
+    snippet = lookup_snippet(user, week_begin)
+    if not snippet:
+        snippet = Snippet(user_id=user.id, week_begin=week_begin)
+    snippet.text = form.text.data
+    db.session.add(snippet)
+    db.session.commit()
+
+    # redirect to editor but make the week sticky
+    session["week_begin"] = date.isoformat(week_begin)
+    return redirect(url_for("user", id=user.id))
+
+
+@app.route("/user/<id>/history", methods=["GET", "POST"])
+def user_history(id):
+    user = User.query.get(id)
+    user_snippets = Snippet.query.filter_by(user_id=user.id)
+    ordered_snippets = user_snippets.order_by(Snippet.week_begin.desc())
+    md = markdown.Markdown()
+    rendered = [render_snippet(md, s) for s in ordered_snippets]
+    return render_template("user_history.html.j2", snippets=rendered)

@@ -3,9 +3,11 @@
 
 {% block page_content %}
 <div class="page-header">
-    <h1>Hello, {{ name }}</h1>
-    <h2>What have you done this week?</h2>
-    {% if snippet %}<div>{{ snippet }}</div>{% endif %}
+    <h1>Hello, {{ name }}.</h1>
+    <h2>It's the week of {{ moment(week_begin).format("MMMM	Do, YYYY") }}</h2>
+    {% if content %}
+    <div>{{ content }}</div>
+    {% endif %}
     {{ wtf.quick_form(form) }}
 </div>
 {% endblock %}
