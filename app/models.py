@@ -1,6 +1,6 @@
 from flask.globals import current_app
 from flask_login import UserMixin
-from itsdangerous import Serializer, TimedJSONWebSignatureSerializer
+from itsdangerous import TimedJSONWebSignatureSerializer as TimedSerializer
 from werkzeug.security import generate_password_hash, check_password_hash
 
 from app import db
@@ -23,15 +23,16 @@ class User(UserMixin, db.Model):
     snippets = db.relationship("Snippet", backref="user", lazy="dynamic")
 
     def generate_confirmation_token(self, expiration=3600):
-        s = Serializer(current_app.config["SECRET_KEY"], expiration)
-        return s.dumps({"confirm": self.id}).decode("utf-8")
+        s = TimedSerializer(current_app.config["SECRET_KEY"], expiration)
+        return s.dumps({"confirm": self.id})
 
     def confirm(self, token):
-        s = Serializer(current_app.config["SECRET_KEY"])
+        s = TimedSerializer(current_app.config["SECRET_KEY"])
         try:
-            data = s.loads(token.encode("utf-8"))
+            data = s.loads(token)
         except:
             return False
+        print(token, data)
         if data.get("confirm") != self.id:
             return False
         self.confirmed = True

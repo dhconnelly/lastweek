@@ -79,7 +79,7 @@ snippets = [
 def populate_all(db):
     user_rows = {}
     for user in users:
-        row = User(**user)
+        row = User(confirmed=True, **user)
         user_rows[user["email"]] = row
         db.session.add(row)
     for snippet in snippets:
