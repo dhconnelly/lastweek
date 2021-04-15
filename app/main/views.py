@@ -2,6 +2,7 @@ from datetime import date
 from typing import NamedTuple, Text
 
 from flask import render_template, redirect, url_for
+from flask_login import login_required
 from flask.wrappers import Response
 import markdown
 
@@ -72,6 +73,7 @@ def index() -> Response:
 
 
 @main.route("/user/<id>/week/<int:y>/<int:m>/<int:d>", methods=["GET", "POST"])
+@login_required
 def edit(id, y, m, d) -> Response:
     if not (user := User.query.get(id)):
         return render_template("404.html.j2"), 404
@@ -101,6 +103,7 @@ def user(id) -> Response:
 
 
 @main.route("/user/<id>/history", methods=["GET", "POST"])
+@login_required
 def user_history(id) -> Response:
     user = User.query.get(id)
     user_snippets = Snippet.query.filter_by(user_id=user.id)
