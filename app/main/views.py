@@ -1,9 +1,9 @@
 from datetime import date
-from typing import NamedTuple, Text
+from typing import NamedTuple, Text, Union
 
 from flask import render_template, redirect, url_for
+from werkzeug.wrappers import Response
 from flask_login import login_required, current_user
-from flask.wrappers import Response
 import markdown
 
 from app.main import main
@@ -65,7 +65,7 @@ def update_snippet(user: User, week_begin: date, text: str):
 
 
 @main.route("/", methods=["GET", "POST"])
-def index() -> Response:
+def index() -> Union[Response, Text]:
     if current_user.is_authenticated:
         return redirect("/edit")
     return render_template("index.html.j2")
@@ -74,7 +74,7 @@ def index() -> Response:
 @main.route("/edit", methods=["GET", "POST"])
 @main.route("/edit/<int:y>/<int:m>/<int:d>", methods=["GET", "POST"])
 @login_required
-def edit(y=None, m=None, d=None) -> Response:
+def edit(y=None, m=None, d=None) -> Union[Response, Text]:
     # redirect to the first day of the week if necessary
     requested_date = y and m and d and date(y, m, d)
     week_begin = iso_week_begin(requested_date or date.today())
@@ -93,7 +93,7 @@ def edit(y=None, m=None, d=None) -> Response:
 
 @main.route("/history", methods=["GET", "POST"])
 @login_required
-def history() -> Response:
+def history() -> Union[Response, Text]:
     user_snippets = Snippet.query.filter_by(user_id=current_user.id)
     ordered_snippets = user_snippets.order_by(Snippet.week_begin.desc())
     md = markdown.Markdown()
