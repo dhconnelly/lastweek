@@ -2,7 +2,7 @@ from datetime import date
 from typing import NamedTuple, Text
 
 from flask import render_template, redirect, url_for
-from flask_login import login_required
+from flask_login import login_required, current_user
 from flask.wrappers import Response
 import markdown
 
@@ -41,7 +41,7 @@ def render_snippet_form(
     form.text.data = text
     form.week_begin.data = week_begin
     return render_template(
-        "user.html.j2",
+        "edit.html.j2",
         name=user.name,
         user_id=user.id,
         week_begin=week_begin,
@@ -66,48 +66,36 @@ def update_snippet(user: User, week_begin: date, text: str):
 
 @main.route("/", methods=["GET", "POST"])
 def index() -> Response:
-    snippets = Snippet.query.order_by(Snippet.week_begin.desc()).all()
-    md = markdown.Markdown()
-    rendered = [render_snippet(md, s) for s in snippets]
-    return render_template("index.html.j2", snippets=rendered)
+    if current_user.is_authenticated:
+        return redirect("/edit")
+    return render_template("index.html.j2")
 
 
-@main.route("/user/<id>/week/<int:y>/<int:m>/<int:d>", methods=["GET", "POST"])
+@main.route("/edit", methods=["GET", "POST"])
+@main.route("/edit/<int:y>/<int:m>/<int:d>", methods=["GET", "POST"])
 @login_required
-def edit(id, y, m, d) -> Response:
-    if not (user := User.query.get(id)):
-        return render_template("404.html.j2"), 404
-
+def edit(y=None, m=None, d=None) -> Response:
     # redirect to the first day of the week if necessary
-    requested_date = date(y, m, d)
-    week_begin = iso_week_begin(requested_date)
+    requested_date = y and m and d and date(y, m, d)
+    week_begin = iso_week_begin(requested_date or date.today())
     if requested_date != week_begin:
         (y, m, d) = (week_begin.year, week_begin.month, week_begin.day)
-        return redirect(url_for(".edit", id=user.id, y=y, m=m, d=d))
+        return redirect(url_for(".edit", y=y, m=m, d=d))
 
+    # if updating, always redirect to the same week
     form = SnippetsForm()
     if form.validate_on_submit():
-        update_snippet(user, week_begin, form.text.data)
-        return redirect(url_for(".edit", id=user.id, y=y, m=m, d=d))
-    return render_snippet_form(form, user, week_begin)
+        update_snippet(current_user, week_begin, form.text.data)
+        return redirect(url_for(".edit", y=y, m=m, d=d))
+
+    return render_snippet_form(form, current_user, week_begin)
 
 
-@main.route("/user/<id>", methods=["GET", "POST"])
-def user(id) -> Response:
-    user = User.query.get(id)
-    if not user:
-        return render_template("404.html.j2"), 404
-    today = date.today()
-    (y, m, d) = (today.year, today.month, today.day)
-    return redirect(url_for(".edit", id=user.id, y=y, m=m, d=d))
-
-
-@main.route("/user/<id>/history", methods=["GET", "POST"])
+@main.route("/history", methods=["GET", "POST"])
 @login_required
-def user_history(id) -> Response:
-    user = User.query.get(id)
-    user_snippets = Snippet.query.filter_by(user_id=user.id)
+def history() -> Response:
+    user_snippets = Snippet.query.filter_by(user_id=current_user.id)
     ordered_snippets = user_snippets.order_by(Snippet.week_begin.desc())
     md = markdown.Markdown()
     rendered = [render_snippet(md, s) for s in ordered_snippets]
-    return render_template("user_history.html.j2", snippets=rendered)
+    return render_template("history.html.j2", snippets=rendered)
