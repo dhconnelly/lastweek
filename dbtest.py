@@ -1,4 +1,5 @@
-from app import Snippet, User, iso_week_begin
+from app.models import Snippet, User
+from app.main.views import iso_week_begin
 from datetime import date
 
 
@@ -11,6 +12,12 @@ users = [
     {"email": "jürgen.müller@example.com", "name": "Jürgen Müller"},
     {"email": "léa.léa@example.com", "name": "Léa de la Bonne Chance"},
 ]
+
+passwords = {
+    "bob@example.com": "hello world",
+    "jürgen.müller@example.com": "alles was entsteht ist wert dass es zugrunde geht",
+    "léa.léa@example.com": "a1s@d$YYY",
+}
 
 snippets = [
     {
@@ -80,6 +87,9 @@ def populate_all(db):
         date = iso_week_begin(snippet["date"])
         row = Snippet(text=snippet["text"], user=user, week_begin=date)
         db.session.add(row)
+    for email, password in passwords.items():
+        user_rows[email].password = password
+        db.session.add(user_rows[email])
     db.session.commit()
 
 
