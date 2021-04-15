@@ -5,6 +5,14 @@ basedir = path.abspath(path.dirname(__file__))
 
 class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    MAIL_SERVER = environ.get("MAIL_SERVER", "smtp.gmail.com")
+    MAIL_PORT = int(environ.get("MAIL_PORT", "587"))
+    MAIL_USE_TLS = True
+    MAIL_USERNAME = environ.get("MAIL_USERNAME")
+    MAIL_PASSWORD = environ.get("MAIL_PASSWORD")
+    LASTWEEK_MAIL_SUBJECT_PREFIX = "[lastweek] "
+    LASTWEEK_MAIL_SENDER = "lastweek admin <admin@lastweek.dev>"
+    LASTWEEK_ADMIN = environ.get("LASTWEEK_ADMIN")
 
     @staticmethod
     def init_app(app):

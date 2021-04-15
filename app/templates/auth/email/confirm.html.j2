@@ -1,0 +1,13 @@
+<h3>Dear {{ user.name }},</h3>
+
+<h4>Welcome to lastweek!</h4
+
+<p>To confirm your account, please click
+<a href="{{ url_for('auth.confirm', token=token, _external=True) }}">
+here</a>.</p>
+
+<p>Sincerely,</p>
+
+<p>The lastweek team</p>
+
+<small>Note: Replies to this email address are not monitored.</small>
