@@ -3,9 +3,25 @@ from flask.helpers import flash, url_for
 from flask_login import login_user
 from flask_login.utils import login_required, logout_user
 
+from app import db
 from app.auth import auth
 from app.models import User
-from app.auth.forms import LoginForm
+from app.auth.forms import LoginForm, RegistrationForm
+
+
+@auth.route("/register", methods=["GET", "POST"])
+def register():
+    form = RegistrationForm()
+    if not form.validate_on_submit():
+        return render_template("auth/register.html.j2", form=form)
+
+    user = User(
+        name=form.name.data, email=form.email.data, password=form.password.data
+    )
+    db.session.add(user)
+    db.session.commit()
+    flash("You can now log in")
+    return redirect(url_for("auth.login"))
 
 
 @auth.route("/logout")
