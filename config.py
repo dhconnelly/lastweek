@@ -29,6 +29,7 @@ class TestingConfig(Config):
     TESTING = True
     SECRET_KEY = "testing secret key"
     SQLALCHEMY_DATABASE_URI = "sqlite://"
+    WTF_CSRF_ENABLED = False
 
 
 class ProductionConfig(Config):
