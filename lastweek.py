@@ -15,6 +15,16 @@ def make_shell_context():
 
 
 @app.cli.command()
+def fill_db():
+    """Fills the dev database with fake data."""
+    if not app.config.get("DEV"):
+        return
+    from fill_db import fill_db
+
+    fill_db(db)
+
+
+@app.cli.command()
 def test():
     """Run the unit tests."""
     import unittest

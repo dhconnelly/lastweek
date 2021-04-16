@@ -20,6 +20,7 @@ class Config:
 
 
 class DevelopmentConfig(Config):
+    DEV = True
     DEBUG = True
     SECRET_KEY = "dev secret key"
     SQLALCHEMY_DATABASE_URI = "sqlite:///" + path.join(basedir, "data.sqlite")
