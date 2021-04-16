@@ -19,6 +19,7 @@ class User(UserMixin, db.Model):
     name = db.Column(db.String(255), nullable=False)
     password_hash = db.Column(db.String(128), nullable=False)
     confirmed = db.Column(db.Boolean, default=False, nullable=False)
+    member_since = db.Column(db.Date, nullable=False)
 
     snippets = db.relationship("Snippet", backref="user", lazy="dynamic")
 
