@@ -2,6 +2,7 @@ from flask.globals import current_app
 from flask_login import UserMixin
 from itsdangerous import TimedJSONWebSignatureSerializer as TimedSerializer
 from werkzeug.security import generate_password_hash, check_password_hash
+from sqlalchemy import Index
 
 from app import db
 from app import login_manager
@@ -60,8 +61,10 @@ class Snippet(db.Model):
     __tablename__ = "snippets"
     id = db.Column(db.Integer, primary_key=True, nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
-    text = db.Column(db.UnicodeText)
-    week_begin = db.Column(db.Date, nullable=False, index=True)
+    text = db.Column(db.UnicodeText, nullable=False)
+    year = db.Column(db.Integer, nullable=False)
+    week = db.Column(db.Integer, nullable=False)
+    __table_args__ = (db.Index("iso_week_date", "year", "week"),)
 
     def __repr__(self):
-        return f"<Snippet {repr(self.user.email)} {repr(self.week_begin)}>"
+        return f"<Snippet {repr(self.user.email)} {self.year} {self.week}>"

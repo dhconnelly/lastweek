@@ -5,5 +5,6 @@ from wtforms.fields.simple import HiddenField, TextAreaField
 
 class SnippetsForm(FlaskForm):
     text = TextAreaField("What have you done this week?")
-    week_begin = HiddenField()
+    year = HiddenField()
+    week = HiddenField()
     submit = SubmitField("Save")
