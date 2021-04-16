@@ -17,7 +17,7 @@ jobs:
             pip install -r requirements.txt
       - python/save-cache
       - run:
-          command: flask test
+          command: python3 -m flask test
           name: Test
 
 workflows:
