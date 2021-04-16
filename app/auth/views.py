@@ -43,7 +43,7 @@ def send_confirmation_token(user):
 @login_required
 def resend_confirmation():
     send_confirmation_token(current_user)
-    flash("A new confirmation link has been sent to you via email")
+    flash("A new confirmation link has been sent via email")
     return redirect(url_for("main.index"))
 
 
@@ -70,7 +70,8 @@ def register():
     db.session.add(user)
     db.session.commit()
     send_confirmation_token(user)
-    return redirect(url_for("main.index"))
+    flash("A confirmation link has been sent to you via email")
+    return redirect(url_for("auth.login"))
 
 
 @auth.route("/logout")
