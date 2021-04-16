@@ -12,15 +12,12 @@ from app import db
 from app.main.forms import SnippetsForm
 
 
-def iso_week_begin(d: date) -> date:
-    iso = d.isocalendar()
-    return date.fromisocalendar(iso[0], iso[1], 1)
-
-
 class RenderedSnippet(NamedTuple):
     email: str
     id: int
     week_begin: date
+    year: int
+    week: int
     content: str
 
 
@@ -28,37 +25,40 @@ def render_snippet(md: markdown.Markdown, snippet: Snippet) -> RenderedSnippet:
     return RenderedSnippet(
         email=snippet.user.email,
         id=snippet.user.id,
-        week_begin=snippet.week_begin,
+        year=snippet.year,
+        week=snippet.week,
+        week_begin=date.fromisocalendar(snippet.year, snippet.week, 1),
         content=snippet and md.convert(snippet.text),
     )
 
 
 def render_snippet_form(
-    form: SnippetsForm, user: User, week_begin: date
+    form: SnippetsForm, user: User, year: int, week: int
 ) -> Text:
-    snippet = lookup_snippet(user, week_begin)
+    snippet = lookup_snippet(user, year, week)
     text = snippet and snippet.text
     form.text.data = text
-    form.week_begin.data = week_begin
+    form.year.data = year
+    form.week.data = week
     return render_template(
         "edit.html.j2",
         name=user.name,
         user_id=user.id,
-        week_begin=week_begin,
+        week_begin=date.fromisocalendar(year, week, 1),
         content=text and markdown.markdown(text),
         form=form,
     )
 
 
-def lookup_snippet(user: User, week_begin: date) -> Snippet:
-    snippet = Snippet.query.filter_by(user_id=user.id, week_begin=week_begin)
+def lookup_snippet(user: User, year: int, week: int) -> Snippet:
+    snippet = Snippet.query.filter_by(user_id=user.id, year=year, week=week)
     return snippet.first()
 
 
-def update_snippet(user: User, week_begin: date, text: str):
-    snippet = lookup_snippet(user, week_begin)
+def update_snippet(user: User, year: int, week: int, text: str):
+    snippet = lookup_snippet(user, year, week)
     if not snippet:
-        snippet = Snippet(user_id=user.id, week_begin=week_begin)
+        snippet = Snippet(user_id=user.id, year=year, week=week)
     snippet.text = text
     db.session.add(snippet)
     db.session.commit()
@@ -72,30 +72,26 @@ def index() -> Union[Response, Text]:
 
 
 @main.route("/edit", methods=["GET", "POST"])
-@main.route("/edit/<int:y>/<int:m>/<int:d>", methods=["GET", "POST"])
+@main.route("/edit/<int:year>/<int:week>", methods=["GET", "POST"])
 @login_required
-def edit(y=None, m=None, d=None) -> Union[Response, Text]:
-    # redirect to the first day of the week if necessary
-    requested_date = y and m and d and date(y, m, d)
-    week_begin = iso_week_begin(requested_date or date.today())
-    if requested_date != week_begin:
-        (y, m, d) = (week_begin.year, week_begin.month, week_begin.day)
-        return redirect(url_for(".edit", y=y, m=m, d=d))
-
+def edit(year=None, week=None) -> Union[Response, Text]:
+    if not year or not week:
+        (year, week, _) = date.today().isocalendar()
+        return redirect(url_for(".edit", year=year, week=week))
     # if updating, always redirect to the same week
     form = SnippetsForm()
     if form.validate_on_submit():
-        update_snippet(current_user, week_begin, form.text.data)
-        return redirect(url_for(".edit", y=y, m=m, d=d))
-
-    return render_snippet_form(form, current_user, week_begin)
+        update_snippet(current_user, year, week, form.text.data)
+        return redirect(url_for(".edit", year=year, week=week))
+    return render_snippet_form(form, current_user, year, week)
 
 
 @main.route("/history", methods=["GET", "POST"])
 @login_required
 def history() -> Union[Response, Text]:
-    user_snippets = Snippet.query.filter_by(user_id=current_user.id)
-    ordered_snippets = user_snippets.order_by(Snippet.week_begin.desc())
+    user_snippets = Snippet.query.filter_by(user_id=current_user.id).order_by(
+        Snippet.year.desc(), Snippet.week.desc()
+    )
     md = markdown.Markdown()
-    rendered = [render_snippet(md, s) for s in ordered_snippets]
+    rendered = [render_snippet(md, s) for s in user_snippets]
     return render_template("history.html.j2", snippets=rendered)

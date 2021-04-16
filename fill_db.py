@@ -5,7 +5,7 @@ from mimesis.providers.generic import Generic
 from sqlalchemy.exc import IntegrityError
 
 from app.models import Snippet, User
-from app.main.views import iso_week_begin
+from core.date_utils import iso_week_begin
 
 
 class LastweekFaker:
@@ -49,10 +49,12 @@ class LastweekFaker:
             if date not in dates:
                 break
         dates.add(date)
+        (year, week, _) = date.isocalendar()
         snippet = Snippet(
             user=user,
             text=self.faker.text.text(),
-            week_begin=date,
+            year=year,
+            week=week,
         )
         self.snippets.append(snippet)
 
