@@ -9,10 +9,13 @@ jobs:
     steps:
       - checkout
       - python/load-cache
-      - python/install-deps
-      - python/save-cache
       - run:
-          command: . venv/bin/activate
+          name: Install Python deps in a venv
+          command: |
+            python3 -m venv venv
+            . venv/bin/activate
+            pip install -r requirements/dev.txt
+      - python/save-cache
       - run:
           command: flask test
           name: Test
