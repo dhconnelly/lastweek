@@ -12,7 +12,7 @@ jobs:
       - python/install-deps
       - python/save-cache
       - run:
-          command: source venv/activate
+          command: . venv/bin/activate
       - run:
           command: flask test
           name: Test
