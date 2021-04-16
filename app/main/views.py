@@ -89,11 +89,9 @@ def edit(year=None, week=None) -> Union[Response, Text]:
 @main.route("/history", methods=["GET", "POST"])
 @login_required
 def history() -> Union[Response, Text]:
-    user_snippets = Snippet.query.filter_by(user_id=current_user.id)
-
-    # TODO: add ordering back
-    ordered_snippets = user_snippets
-
+    user_snippets = Snippet.query.filter_by(user_id=current_user.id).order_by(
+        Snippet.year.desc(), Snippet.week.desc()
+    )
     md = markdown.Markdown()
-    rendered = [render_snippet(md, s) for s in ordered_snippets]
+    rendered = [render_snippet(md, s) for s in user_snippets]
     return render_template("history.html.j2", snippets=rendered)
