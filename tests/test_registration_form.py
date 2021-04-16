@@ -1,3 +1,4 @@
+from datetime import date
 from app.models import User
 import unittest
 
@@ -55,6 +56,7 @@ class RegistrationFormTest(unittest.TestCase):
                 email=form.email.data,
                 password_hash="abc",
                 confirmed=False,
+                member_since=date.today(),
             )
         )
         db.session.commit()

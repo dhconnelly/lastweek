@@ -32,6 +32,7 @@ class LastweekFaker:
             name=self.faker.person.full_name(),
             password=password,
             confirmed=True,
+            member_since=date.fromtimestamp(0),
         )
         self.users[email] = user
         self.user_emails.append(email)

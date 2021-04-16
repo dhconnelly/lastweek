@@ -1,3 +1,4 @@
+from datetime import date
 from time import sleep
 import unittest
 
@@ -42,6 +43,7 @@ class UserModelTest(unittest.TestCase):
             email="bob@example.com",
             password="cat",
             confirmed=False,
+            member_since=date.today(),
         )
         db.session.add(u)
         db.session.commit()
@@ -55,12 +57,14 @@ class UserModelTest(unittest.TestCase):
             email="bob@example.com",
             password="cat",
             confirmed=False,
+            member_since=date.today(),
         )
         u2 = User(
             name="fred",
             email="fred@example.com",
             password="cat",
             confirmed=False,
+            member_since=date.today(),
         )
         db.session.add(u1)
         db.session.add(u2)
@@ -75,6 +79,7 @@ class UserModelTest(unittest.TestCase):
             email="bob@example.com",
             password="cat",
             confirmed=False,
+            member_since=date.today(),
         )
         db.session.add(u)
         db.session.commit()

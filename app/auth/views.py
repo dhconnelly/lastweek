@@ -1,3 +1,4 @@
+from datetime import date
 from app.email import send_email
 from flask import render_template, request, redirect
 from flask.helpers import flash, url_for
@@ -65,7 +66,10 @@ def register():
     if not form.validate_on_submit():
         return render_template("auth/register.html.j2", form=form)
     user = User(
-        name=form.name.data, email=form.email.data, password=form.password.data
+        name=form.name.data,
+        email=form.email.data,
+        password=form.password.data,
+        member_since=date.today(),
     )
     db.session.add(user)
     db.session.commit()
