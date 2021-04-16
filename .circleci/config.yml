@@ -17,8 +17,9 @@ jobs:
             pip install -r requirements.txt
       - python/save-cache
       - run:
-          command: flask test
-          name: Test
+          command: |
+            . venv/bin/activate
+            python3 -m flask test
 
 workflows:
   main:
