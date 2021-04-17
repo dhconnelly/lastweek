@@ -59,7 +59,7 @@ class LastweekFaker:
         self.snippets.append(snippet)
 
 
-def fill_db(db, password="p@ssw0rd", user_count=20, snippet_count=200):
+def fill_db(db, password="p@ssw0rd", user_count=20, snippet_count=1000):
     print("Filling dev database with fake data...")
     db.create_all()
     faker = LastweekFaker(db, Generic())

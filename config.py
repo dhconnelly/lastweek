@@ -13,6 +13,7 @@ class Config:
     LASTWEEK_MAIL_SUBJECT_PREFIX = "[lastweek] "
     LASTWEEK_MAIL_SENDER = "lastweek admin <admin@lastweek.dev>"
     LASTWEEK_ADMIN = environ.get("LASTWEEK_ADMIN")
+    LASTWEEK_SNIPPETS_PER_PAGE = 10
 
     @staticmethod
     def init_app(app):

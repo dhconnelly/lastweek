@@ -1,7 +1,7 @@
 from datetime import date
 from typing import NamedTuple, Text, Union
 
-from flask import render_template, redirect, url_for
+from flask import render_template, redirect, url_for, request, current_app
 from werkzeug.wrappers import Response
 from flask_login import login_required, current_user
 import markdown
@@ -89,9 +89,16 @@ def edit(year=None, week=None) -> Union[Response, Text]:
 @main.route("/history", methods=["GET", "POST"])
 @login_required
 def history() -> Union[Response, Text]:
-    user_snippets = Snippet.query.filter_by(user_id=current_user.id).order_by(
-        Snippet.year.desc(), Snippet.week.desc()
-    )
+    page = request.args.get("page", 1, type=int)
     md = markdown.Markdown()
-    rendered = [render_snippet(md, s) for s in user_snippets]
-    return render_template("history.html.j2", snippets=rendered)
+    snippets = Snippet.query.filter_by(user_id=current_user.id)
+    snippets = snippets.order_by(Snippet.year.desc(), Snippet.week.desc())
+    pagination = snippets.paginate(
+        page,
+        per_page=current_app.config["LASTWEEK_SNIPPETS_PER_PAGE"],
+        error_out=True,
+    )
+    snippets = [render_snippet(md, s) for s in pagination.items]
+    return render_template(
+        "history.html.j2", snippets=snippets, pagination=pagination
+    )
