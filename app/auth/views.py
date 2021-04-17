@@ -8,7 +8,7 @@ from flask_login.utils import login_required, logout_user
 from app import db
 from app.auth import auth
 from app.models import User
-from app.auth.forms import LoginForm, RegistrationForm
+from app.auth.forms import ChangePasswordForm, LoginForm, RegistrationForm
 
 
 @auth.before_app_request
@@ -38,6 +38,22 @@ def send_confirmation_token(user):
         user=user,
         token=token,
     )
+
+
+@auth.route("/settings", methods=["GET", "POST"])
+@login_required
+def settings():
+    form = ChangePasswordForm()
+    if not form.validate_on_submit():
+        return render_template("auth/settings.html.j2", form=form)
+    if not current_user.verify_password(form.old_password.data):
+        flash("Incorrect current password")
+        return render_template("auth/settings.html.j2", form=form)
+    current_user.password = form.new_password.data
+    db.session.add(current_user)
+    db.session.commit()
+    flash("Your password has been updated")
+    return redirect(url_for("auth.settings"))
 
 
 @auth.route("/confirm")
