@@ -1,0 +1,11 @@
+Dear {{ user.name }},
+
+To reset your password, please click the following link:
+
+{{ url_for("auth.reset", token=token, _external=True) }}
+
+Sincerely,
+
+The lastweek team
+
+Note: Replies to this email address are not monitored.

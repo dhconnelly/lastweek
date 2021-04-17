@@ -14,4 +14,8 @@
     <h5>New user?</h5>
     <a href="{{ url_for('auth.register') }}">Click here to register</a>
 </div>
+<div>
+    <h5>Trouble logging in?</h5>
+    <a href="{{ url_for('auth.request_reset') }}">Reset your password</a>
+</div>
 {% endblock %}

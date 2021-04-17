@@ -1,0 +1,11 @@
+<h3>Dear {{ user.name }},</h3>
+
+<p>To reset your password, please click
+<a href="{{ url_for('auth.reset', token=token, _external=True) }}">
+here</a>.</p>
+
+<p>Sincerely,</p>
+
+<p>The lastweek team</p>
+
+<small>Note: Replies to this email address are not monitored.</small>
