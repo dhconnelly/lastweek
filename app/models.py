@@ -28,13 +28,32 @@ class User(UserMixin, db.Model):
         s = TimedSerializer(current_app.config["SECRET_KEY"], expiration)
         return s.dumps({"confirm": self.id})
 
+    def generate_reset_token(self, expiration=3600):
+        s = TimedSerializer(current_app.config["SECRET_KEY"], expiration)
+        return s.dumps({"reset": self.id})
+
+    @staticmethod
+    def reset_password(token, password):
+        s = TimedSerializer(current_app.config["SECRET_KEY"])
+        try:
+            data = s.loads(token)
+        except:
+            return False
+        if (user_id := data.get("reset")) is None:
+            return False
+        if (user := User.query.get(int(user_id))) is None:
+            return False
+        user.password = password
+        db.session.add(user)
+        db.session.commit()
+        return True
+
     def confirm(self, token):
         s = TimedSerializer(current_app.config["SECRET_KEY"])
         try:
             data = s.loads(token)
         except:
             return False
-        print(token, data)
         if data.get("confirm") != self.id:
             return False
         self.confirmed = True

@@ -8,7 +8,13 @@ from flask_login.utils import login_required, logout_user
 from app import db
 from app.auth import auth
 from app.models import User
-from app.auth.forms import ChangePasswordForm, LoginForm, RegistrationForm
+from app.auth.forms import (
+    ChangePasswordForm,
+    LoginForm,
+    RegistrationForm,
+    RequestResetPasswordForm,
+    ResetPasswordForm,
+)
 
 
 @auth.before_app_request
@@ -29,12 +35,11 @@ def unconfirmed():
     return render_template("auth/unconfirmed.html.j2")
 
 
-def send_confirmation_token(user):
-    token = user.generate_confirmation_token()
+def send_token(user, token, message, template):
     send_email(
         user.email,
-        "Confirm your account",
-        "auth/email/confirm",
+        message,
+        template,
         user=user,
         token=token,
     )
@@ -59,7 +64,10 @@ def settings():
 @auth.route("/confirm")
 @login_required
 def resend_confirmation():
-    send_confirmation_token(current_user)
+    token = current_user.generate_confirmation_token()
+    send_token(
+        current_user, token, "Confirm your account", "auth/email/confirm"
+    )
     flash("A new confirmation link has been sent via email")
     return redirect(url_for("main.index"))
 
@@ -76,6 +84,36 @@ def confirm(token):
     return redirect(url_for("main.index"))
 
 
+@auth.route("/request_reset", methods=["GET", "POST"])
+def request_reset():
+    if not current_user.is_anonymous:
+        return redirect(url_for("main.index"))
+    form = RequestResetPasswordForm()
+    if not form.validate_on_submit():
+        return render_template("auth/request_reset.html.j2", form=form)
+    email = form.email.data.lower()
+    user = User.query.filter_by(email=email).first()
+    if user:
+        token = user.generate_reset_token()
+        send_token(user, token, "Reset your password", "auth/email/reset")
+    flash("If a matching account was found, a reset email has been sent.")
+    return redirect(url_for("auth.login"))
+
+
+@auth.route("/reset/<token>", methods=["GET", "POST"])
+def reset(token):
+    if not current_user.is_anonymous:
+        return redirect(url_for("main.index"))
+    form = ResetPasswordForm()
+    if not form.validate_on_submit():
+        return render_template("auth/reset.html.j2", form=form)
+    if User.reset_password(token, form.new_password.data):
+        flash("Your password has been updated")
+    else:
+        flash("Password reset failed. Please try again")
+    return redirect(url_for("auth.login"))
+
+
 @auth.route("/register", methods=["GET", "POST"])
 def register():
     form = RegistrationForm()
@@ -89,7 +127,8 @@ def register():
     )
     db.session.add(user)
     db.session.commit()
-    send_confirmation_token(user)
+    token = user.generate_confirmation_token()
+    send_token(user, token, "Confirm your account", "auth/email/confirm")
     flash("A confirmation link has been sent to you via email")
     return redirect(url_for("auth.login"))
 
