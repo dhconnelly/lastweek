@@ -7,7 +7,7 @@ from flask_login import login_required, current_user
 import markdown
 
 from app.main import main
-from app.models import Snippet, User
+from app.models import Snippet, User, tagged_snippets, Tag
 from app import db
 from app.main.forms import SnippetsForm
 
@@ -49,7 +49,7 @@ def render_snippet_form(
         week_begin=date.fromisocalendar(year, week, 1),
         content=text and markdown.markdown(text),
         form=form,
-        tags=snippet and snippet.tags,
+        tags=snippet and snippet.tags or [],
     )
 
 
@@ -89,13 +89,26 @@ def edit(year=None, week=None) -> Union[Response, Text]:
     return render_snippet_form(form, current_user, year, week)
 
 
+def all_snippets(user):
+    snippets = Snippet.query.filter_by(user_id=current_user.id)
+    snippets = snippets.order_by(Snippet.year.desc(), Snippet.week.desc())
+    return snippets
+
+
+def get_snippets(user, tag_text=None):
+    query = db.session.query(Snippet).filter_by(user_id=user.id)
+    tag = tag_text and Tag.query.filter_by(text=tag_text).first()
+    if tag is not None:
+        query = query.join(tagged_snippets).filter_by(tag_id=tag.id)
+    return query.order_by(Snippet.year.desc(), Snippet.week.desc())
+
+
 @main.route("/history", methods=["GET", "POST"])
 @login_required
 def history() -> Union[Response, Text]:
     page = request.args.get("page", 1, type=int)
     md = markdown.Markdown()
-    snippets = Snippet.query.filter_by(user_id=current_user.id)
-    snippets = snippets.order_by(Snippet.year.desc(), Snippet.week.desc())
+    snippets = get_snippets(current_user, request.args.get("tag"))
     pagination = snippets.paginate(
         page,
         per_page=current_app.config["LASTWEEK_SNIPPETS_PER_PAGE"],
