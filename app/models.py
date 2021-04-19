@@ -76,14 +76,36 @@ class User(UserMixin, db.Model):
         return f"<User {repr(self.email)}>"
 
 
+class Tag(db.Model):
+    __tablename__ = "tags"
+    id = db.Column(db.Integer, primary_key=True, nullable=False)
+    text = db.Column(db.UnicodeText, nullable=False)
+
+    def __repr__(self):
+        return f"<Tag {self.id} {self.text}>"
+
+
+tagged_snippets = db.Table(
+    "tagged_snippets",
+    db.Column("snippet_id", db.Integer, db.ForeignKey("snippets.id")),
+    db.Column("tag_id", db.Integer, db.ForeignKey("tags.id")),
+)
+
+
 class Snippet(db.Model):
     __tablename__ = "snippets"
+    __table_args__ = (db.Index("iso_week_date", "year", "week"),)
     id = db.Column(db.Integer, primary_key=True, nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
     text = db.Column(db.UnicodeText, nullable=False)
     year = db.Column(db.Integer, nullable=False)
     week = db.Column(db.Integer, nullable=False)
-    __table_args__ = (db.Index("iso_week_date", "year", "week"),)
+    tags = db.relationship(
+        "Tag",
+        secondary=tagged_snippets,
+        backref=db.backref("snippets", lazy="dynamic"),
+        lazy="dynamic",
+    )
 
     def __repr__(self):
         return f"<Snippet {repr(self.user.email)} {self.year} {self.week}>"
