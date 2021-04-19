@@ -1,4 +1,5 @@
 from datetime import date
+from re import I
 from typing import NamedTuple, Text, Union
 
 from flask import render_template, redirect, url_for, request, current_app
@@ -97,9 +98,10 @@ def all_snippets(user):
 
 def get_snippets(user, tag_text=None):
     query = user.snippets
-    tag = tag_text and Tag.query.filter_by(text=tag_text).first()
-    if tag is not None:
-        query = query.join(tagged_snippets).filter_by(tag_id=tag.id)
+    if tag_text:
+        tag = Tag.query.filter_by(text=tag_text).first()
+        tag_id = tag and tag.id
+        query = query.join(tagged_snippets).filter_by(tag_id=tag_id)
     return query.order_by(Snippet.year.desc(), Snippet.week.desc())
 
 
