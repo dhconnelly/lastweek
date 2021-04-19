@@ -8,12 +8,15 @@
         {% for snippet in snippets %}
         <div class="list-group-item">
             <h5>
-                week of {{ snippet["week_begin"] }}
-                {% set year = snippet["year"] %}
-                {% set week = snippet["week"] %}
+                week of {{ snippet.week_begin }}
+                {% set year = snippet.year %}
+                {% set week = snippet.week %}
                 <a href="{{ url_for('main.edit', year=year, week=week) }}">(edit)</a>
             </h5>
-            <p class="mb-1">{{ snippet["content"] }}</p>
+            <p class="mb-1">{{ snippet.content }}</p>
+            {% for tag in snippet.tags %}
+            <a class="btn btn-info btn-sm" href="{{ url_for('main.history', tag=tag.text) }}" role="button">{{ tag.text }}</a>
+            {% endfor %}
         </div>
         {% endfor %}
     </div>
