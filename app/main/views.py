@@ -1,6 +1,6 @@
 from datetime import date
 from re import I
-from typing import NamedTuple, Text, Union
+from typing import List, NamedTuple, Text, Union
 
 from flask import render_template, redirect, url_for, request, current_app
 from werkzeug.wrappers import Response
@@ -31,7 +31,7 @@ def render_snippet(md: markdown.Markdown, snippet: Snippet) -> RenderedSnippet:
         week=snippet.week,
         week_begin=date.fromisocalendar(snippet.year, snippet.week, 1),
         content=snippet and md.convert(snippet.text),
-        tags=snippet.tags,
+        tags=sorted(snippet.tags, key=lambda tag: tag.text),
     )
 
 
@@ -43,6 +43,8 @@ def render_snippet_form(
     form.text.data = text
     form.year.data = year
     form.week.data = week
+    tags = snippet and sorted(tag.text for tag in snippet.tags) or []
+    form.tags.data = ", ".join(tags)
     return render_template(
         "edit.html.j2",
         name=user.name,
@@ -50,7 +52,7 @@ def render_snippet_form(
         week_begin=date.fromisocalendar(year, week, 1),
         content=text and markdown.markdown(text),
         form=form,
-        tags=snippet and snippet.tags or [],
+        tags=tags,
     )
 
 
@@ -59,11 +61,23 @@ def lookup_snippet(user: User, year: int, week: int) -> Snippet:
     return snippet.first()
 
 
-def update_snippet(user: User, year: int, week: int, text: str):
+def get_or_make_tags(texts: List[str]) -> List[Tag]:
+    tags = []
+    for text in set(texts):
+        tag = Tag.query.filter_by(text=text).first()
+        if not tag:
+            tag = Tag(text=text)
+            db.session.add(tag)
+        tags.append(tag)
+    return tags
+
+
+def update_snippet(user: User, year: int, week: int, text: str, tags: str):
     snippet = lookup_snippet(user, year, week)
     if not snippet:
         snippet = Snippet(user_id=user.id, year=year, week=week)
     snippet.text = text
+    snippet.tags = get_or_make_tags(text.strip() for text in tags.split(","))
     db.session.add(snippet)
     db.session.commit()
 
@@ -85,7 +99,9 @@ def edit(year=None, week=None) -> Union[Response, Text]:
     # if updating, always redirect to the same week
     form = SnippetsForm()
     if form.validate_on_submit():
-        update_snippet(current_user, year, week, form.text.data)
+        update_snippet(
+            current_user, year, week, form.text.data, form.tags.data
+        )
         return redirect(url_for(".edit", year=year, week=week))
     return render_snippet_form(form, current_user, year, week)
 
