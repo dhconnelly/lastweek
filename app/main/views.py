@@ -19,6 +19,7 @@ class RenderedSnippet(NamedTuple):
     year: int
     week: int
     content: str
+    tags: list
 
 
 def render_snippet(md: markdown.Markdown, snippet: Snippet) -> RenderedSnippet:
@@ -29,6 +30,7 @@ def render_snippet(md: markdown.Markdown, snippet: Snippet) -> RenderedSnippet:
         week=snippet.week,
         week_begin=date.fromisocalendar(snippet.year, snippet.week, 1),
         content=snippet and md.convert(snippet.text),
+        tags=snippet.tags,
     )
 
 
@@ -47,6 +49,7 @@ def render_snippet_form(
         week_begin=date.fromisocalendar(year, week, 1),
         content=text and markdown.markdown(text),
         form=form,
+        tags=snippet and snippet.tags,
     )
 
 
