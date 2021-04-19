@@ -96,7 +96,7 @@ def all_snippets(user):
 
 
 def get_snippets(user, tag_text=None):
-    query = db.session.query(Snippet).filter_by(user_id=user.id)
+    query = user.snippets
     tag = tag_text and Tag.query.filter_by(text=tag_text).first()
     if tag is not None:
         query = query.join(tagged_snippets).filter_by(tag_id=tag.id)
