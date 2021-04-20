@@ -171,12 +171,14 @@ def get_or_make_tags(texts: List[str]) -> List[Tag]:
     return tags
 
 
-def update_snippet(user: User, year: int, week: int, text: str, tags: str):
+def update_snippet(
+    user: User, year: int, week: int, text: str, tags: List[str]
+):
     snippet = lookup_snippet(user, year, week)
     if not snippet:
         snippet = Snippet(user_id=user.id, year=year, week=week)
     snippet.text = text
-    snippet.tags = get_or_make_tags(text.strip() for text in tags.split(","))
+    snippet.tags = get_or_make_tags(tags)
     db.session.add(snippet)
     db.session.commit()
 

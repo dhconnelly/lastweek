@@ -79,9 +79,8 @@ def edit(year=None, week=None) -> Union[Response, Text]:
     # if updating, always redirect to the same week
     form = SnippetsForm()
     if form.validate_on_submit():
-        update_snippet(
-            current_user, year, week, form.text.data, form.tags.data
-        )
+        tags = [text.strip() for text in form.tags.data.split(",")]
+        update_snippet(current_user, year, week, form.text.data, tags)
         return redirect(url_for(".edit", year=year, week=week))
     return render_snippet_form(form, current_user, year, week)
 
