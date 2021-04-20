@@ -1,11 +1,9 @@
-from datetime import datetime
+from typing import List
 from flask.globals import current_app
 from flask.helpers import url_for
 from flask_login import UserMixin
 from itsdangerous import TimedJSONWebSignatureSerializer as TimedSerializer
-from itsdangerous.jws import TimedJSONWebSignatureSerializer
 from werkzeug.security import generate_password_hash, check_password_hash
-from sqlalchemy import Index
 
 from app import db
 from app import login_manager
@@ -133,6 +131,11 @@ class Snippet(db.Model):
         lazy="dynamic",
     )
 
+    @staticmethod
+    def from_json(json):
+        text = json.get("text", "")
+        tags = json.get("tags", [])
+
     def to_json(self):
         json = {
             "user_id": self.user_id,
@@ -150,3 +153,38 @@ class Snippet(db.Model):
 
     def __repr__(self):
         return f"<Snippet {repr(self.user.email)} {self.year} {self.week}>"
+
+
+def lookup_snippet(user: User, year: int, week: int) -> Snippet:
+    snippet = Snippet.query.filter_by(user_id=user.id, year=year, week=week)
+    return snippet.first()
+
+
+def get_or_make_tags(texts: List[str]) -> List[Tag]:
+    tags = []
+    for text in set(texts):
+        tag = Tag.query.filter_by(text=text).first()
+        if not tag:
+            tag = Tag(text=text)
+            db.session.add(tag)
+        tags.append(tag)
+    return tags
+
+
+def update_snippet(user: User, year: int, week: int, text: str, tags: str):
+    snippet = lookup_snippet(user, year, week)
+    if not snippet:
+        snippet = Snippet(user_id=user.id, year=year, week=week)
+    snippet.text = text
+    snippet.tags = get_or_make_tags(text.strip() for text in tags.split(","))
+    db.session.add(snippet)
+    db.session.commit()
+
+
+def get_snippets(user, tag_text=None):
+    query = user.snippets
+    if tag_text:
+        tag = Tag.query.filter_by(text=tag_text).first()
+        tag_id = tag and tag.id
+        query = query.join(tagged_snippets).filter_by(tag_id=tag_id)
+    return query.order_by(Snippet.year.desc(), Snippet.week.desc())
