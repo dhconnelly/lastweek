@@ -1,11 +1,15 @@
+from datetime import datetime
 from flask.globals import current_app
+from flask.helpers import url_for
 from flask_login import UserMixin
 from itsdangerous import TimedJSONWebSignatureSerializer as TimedSerializer
+from itsdangerous.jws import TimedJSONWebSignatureSerializer
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy import Index
 
 from app import db
 from app import login_manager
+from core.date_utils import iso_week_begin, this_week
 
 
 @login_manager.user_loader
@@ -24,13 +28,39 @@ class User(UserMixin, db.Model):
 
     snippets = db.relationship("Snippet", backref="user", lazy="dynamic")
 
+    def to_json(self):
+        (year, week) = this_week()
+        json = {
+            "url": url_for("api.get_user", user_id=self.id),
+            "email": self.email,
+            "member_since": self.member_since,
+            "latest_url": url_for(
+                "api.get_user_week", user_id=self.id, year=year, week=week
+            ),
+            "all_url": url_for("api.get_user_weeks", user_id=self.id),
+        }
+        return json
+
+    def generate_auth_token(self, expiration):
+        s = TimedSerializer(current_app.config["SECRET_KEY"], expiration)
+        return s.dumps({"id": self.id}).decode("utf-8")
+
     def generate_confirmation_token(self, expiration=3600):
         s = TimedSerializer(current_app.config["SECRET_KEY"], expiration)
-        return s.dumps({"confirm": self.id})
+        return s.dumps({"confirm": self.id}).decode("utf-8")
 
     def generate_reset_token(self, expiration=3600):
         s = TimedSerializer(current_app.config["SECRET_KEY"], expiration)
-        return s.dumps({"reset": self.id})
+        return s.dumps({"reset": self.id}).decode("utf-8")
+
+    @staticmethod
+    def verify_auth_token(token):
+        s = TimedSerializer(current_app.config["SECRET_KEY"])
+        try:
+            data = s.loads(token)
+        except:
+            return None
+        return User.query.get(data["id"])
 
     @staticmethod
     def reset_password(token, password):
@@ -106,6 +136,22 @@ class Snippet(db.Model):
         backref=db.backref("snippets", lazy="dynamic"),
         lazy="dynamic",
     )
+
+    def to_json(self):
+        json = {
+            "url": url_for(
+                "api.get_user_week",
+                user_id=self.user_id,
+                year=self.year,
+                week=self.week,
+            ),
+            "user_url": url_for("api.get_user", user_id=self.user_id),
+            "text": self.text,
+            "year": self.year,
+            "week": self.week,
+            "tags": [tag.text for tag in self.tags],
+        }
+        return json
 
     def __repr__(self):
         return f"<Snippet {repr(self.user.email)} {self.year} {self.week}>"
