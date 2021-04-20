@@ -31,13 +31,9 @@ class User(UserMixin, db.Model):
     def to_json(self):
         (year, week) = this_week()
         json = {
-            "url": url_for("api.get_user", user_id=self.id),
+            "id": self.id,
             "email": self.email,
             "member_since": self.member_since,
-            "latest_url": url_for(
-                "api.get_user_week", user_id=self.id, year=year, week=week
-            ),
-            "all_url": url_for("api.get_user_weeks", user_id=self.id),
         }
         return json
 
@@ -139,13 +135,12 @@ class Snippet(db.Model):
 
     def to_json(self):
         json = {
+            "user_id": self.user_id,
             "url": url_for(
-                "api.get_user_week",
-                user_id=self.user_id,
+                "api.get_week",
                 year=self.year,
                 week=self.week,
             ),
-            "user_url": url_for("api.get_user", user_id=self.user_id),
             "text": self.text,
             "year": self.year,
             "week": self.week,
