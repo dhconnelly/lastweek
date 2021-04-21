@@ -1,9 +1,10 @@
+from app.api.errors import ValidationError
 from flask import jsonify
 from flask.globals import g, request
 
 from . import api
 from app.models import Snippet, get_snippets, lookup_snippet, update_snippet
-from core.date_utils import this_week
+from core.date_utils import is_valid_iso_week, this_week
 
 
 @api.route("/weeks/")
@@ -19,7 +20,8 @@ def get_weeks():
 def get_week(year=None, week=None):
     if not year or not week:
         (year, week) = this_week()
-    # TODO: validate the week and year
+    if not is_valid_iso_week(year, week):
+        raise ValidationError("invalid ISO week date")
     snippet = lookup_snippet(g.current_user, year, week)
     if snippet is None:
         # don't worry about actually adding to the database until user saves
@@ -32,7 +34,8 @@ def get_week(year=None, week=None):
 def update_week(year=None, week=None):
     if not year or not week:
         (year, week) = this_week()
-    # TODO: validate the week and year
+    if not is_valid_iso_week(year, week):
+        raise ValidationError("invalid ISO week date")
     text = request.json.get("text", "")
     tags = request.json.get("tags", [])
     update_snippet(g.current_user, year, week, text, tags)

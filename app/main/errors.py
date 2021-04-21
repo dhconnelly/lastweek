@@ -1,8 +1,14 @@
+from app.api.errors import ValidationError
 from flask import render_template, Response
 from flask.globals import request
 from flask.json import jsonify
 
 from app.main import main
+
+
+@main.app_errorhandler(ValidationError)
+def validation_error(e):
+    return render_template("400.html.j2"), 400
 
 
 @main.app_errorhandler(403)

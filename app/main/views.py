@@ -1,4 +1,5 @@
-from core.date_utils import this_week
+from app.api.errors import ValidationError
+from core.date_utils import is_valid_iso_week, this_week
 from datetime import date
 from typing import NamedTuple, Text, Union
 
@@ -76,6 +77,8 @@ def edit(year=None, week=None) -> Union[Response, Text]:
     if not year or not week:
         (year, week) = this_week()
         return redirect(url_for(".edit", year=year, week=week))
+    if not is_valid_iso_week(year, week):
+        raise ValidationError("invalid ISO week date")
     # if updating, always redirect to the same week
     form = SnippetsForm()
     if form.validate_on_submit():
