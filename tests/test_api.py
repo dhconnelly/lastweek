@@ -16,9 +16,6 @@ class APITest(unittest.TestCase):
         db.drop_all()
         self.app_context.pop()
 
-    def test_foo(self):
-        self.assertTrue(False)
-
     # TODO: login
     # TODO: user
     # TODO: get current week
