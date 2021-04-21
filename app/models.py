@@ -1,11 +1,13 @@
+from typing import List
 from flask.globals import current_app
+from flask.helpers import url_for
 from flask_login import UserMixin
 from itsdangerous import TimedJSONWebSignatureSerializer as TimedSerializer
 from werkzeug.security import generate_password_hash, check_password_hash
-from sqlalchemy import Index
 
 from app import db
 from app import login_manager
+from core.date_utils import iso_week_begin, this_week
 
 
 @login_manager.user_loader
@@ -24,13 +26,35 @@ class User(UserMixin, db.Model):
 
     snippets = db.relationship("Snippet", backref="user", lazy="dynamic")
 
+    def to_json(self):
+        (year, week) = this_week()
+        json = {
+            "id": self.id,
+            "email": self.email,
+            "member_since": self.member_since,
+        }
+        return json
+
+    def generate_auth_token(self, expiration):
+        s = TimedSerializer(current_app.config["SECRET_KEY"], expiration)
+        return s.dumps({"id": self.id}).decode("utf-8")
+
     def generate_confirmation_token(self, expiration=3600):
         s = TimedSerializer(current_app.config["SECRET_KEY"], expiration)
-        return s.dumps({"confirm": self.id})
+        return s.dumps({"confirm": self.id}).decode("utf-8")
 
     def generate_reset_token(self, expiration=3600):
         s = TimedSerializer(current_app.config["SECRET_KEY"], expiration)
-        return s.dumps({"reset": self.id})
+        return s.dumps({"reset": self.id}).decode("utf-8")
+
+    @staticmethod
+    def verify_auth_token(token):
+        s = TimedSerializer(current_app.config["SECRET_KEY"])
+        try:
+            data = s.loads(token)
+        except:
+            return None
+        return User.query.get(data["id"])
 
     @staticmethod
     def reset_password(token, password):
@@ -107,5 +131,62 @@ class Snippet(db.Model):
         lazy="dynamic",
     )
 
+    @staticmethod
+    def from_json(json):
+        text = json.get("text", "")
+        tags = json.get("tags", [])
+
+    def to_json(self):
+        json = {
+            "user_id": self.user_id,
+            "url": url_for(
+                "api.get_week",
+                year=self.year,
+                week=self.week,
+            ),
+            "text": self.text,
+            "year": self.year,
+            "week": self.week,
+            "tags": [tag.text for tag in self.tags],
+        }
+        return json
+
     def __repr__(self):
         return f"<Snippet {repr(self.user.email)} {self.year} {self.week}>"
+
+
+def lookup_snippet(user: User, year: int, week: int) -> Snippet:
+    snippet = Snippet.query.filter_by(user_id=user.id, year=year, week=week)
+    return snippet.first()
+
+
+def get_or_make_tags(texts: List[str]) -> List[Tag]:
+    tags = []
+    for text in set(texts):
+        tag = Tag.query.filter_by(text=text).first()
+        if not tag:
+            tag = Tag(text=text)
+            db.session.add(tag)
+        tags.append(tag)
+    return tags
+
+
+def update_snippet(
+    user: User, year: int, week: int, text: str, tags: List[str]
+):
+    snippet = lookup_snippet(user, year, week)
+    if not snippet:
+        snippet = Snippet(user_id=user.id, year=year, week=week)
+    snippet.text = text
+    snippet.tags = get_or_make_tags(tags)
+    db.session.add(snippet)
+    db.session.commit()
+
+
+def get_snippets(user, tag_text=None):
+    query = user.snippets
+    if tag_text:
+        tag = Tag.query.filter_by(text=tag_text).first()
+        tag_id = tag and tag.id
+        query = query.join(tagged_snippets).filter_by(tag_id=tag_id)
+    return query.order_by(Snippet.year.desc(), Snippet.week.desc())
