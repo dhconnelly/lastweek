@@ -16,10 +16,59 @@ class APITest(unittest.TestCase):
         db.drop_all()
         self.app_context.pop()
 
-    # TODO: login
-    # TODO: user
-    # TODO: get current week
-    # TODO: get specific week
-    # TODO: get all weeks
-    # TODO: update current week
-    # TODO: update specific week
+    def test_login_bad_credentials(self):
+        pass
+
+    def test_login_with_existing_token(self):
+        pass
+
+    def test_login(self):
+        pass
+
+    def test_invalid_token(self):
+        pass
+
+    def test_get_user(self):
+        pass
+
+    def test_get_current_week_new(self):
+        pass
+
+    def test_get_current_week_existing(self):
+        pass
+
+    def test_get_week_invalid(self):
+        pass
+
+    def test_get_week_new(self):
+        pass
+
+    def test_get_week_existing(self):
+        pass
+
+    def test_update_current_week_new(self):
+        pass
+
+    def test_update_current_week_existing(self):
+        pass
+
+    def test_update_week_invalid(self):
+        pass
+
+    def test_update_week_new(self):
+        pass
+
+    def test_update_week_existing(self):
+        pass
+
+    def test_get_weeks_empty(self):
+        pass
+
+    def test_get_weeks_all(self):
+        pass
+
+    def test_get_weeks_tag_filter(self):
+        pass
+
+    def test_get_weeks_pagination(self):
+        pass
