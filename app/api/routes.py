@@ -26,7 +26,7 @@ def get_user():
 def get_weeks():
     page = request.args.get("page", 1, type=int)
     tag = request.args.get("tag")
-    snippets = Snippet.get_all(g.current_user, tag_text=tag)
+    snippets = Snippet.get_all(g.current_user.id, tag_text=tag)
 
     pagination = snippets.paginate(
         page,
@@ -57,7 +57,7 @@ def get_weeks():
 def get_week(year=None, week=None):
     if not year or not week:
         (year, week) = this_week()
-    snippet = Snippet.get_by_week(g.current_user, year, week)
+    snippet = Snippet.get_by_week(g.current_user.id, year, week)
     if snippet is None:
         # don't worry about actually adding to the database until user saves
         snippet = Snippet(user_id=g.current_user.id, year=year, week=week)

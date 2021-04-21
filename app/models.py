@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-from typing import List
+from typing import List, Optional
 from flask.globals import current_app
 from flask.helpers import url_for
 from flask_login import UserMixin
 from itsdangerous import TimedJSONWebSignatureSerializer as TimedSerializer
+from sqlalchemy.orm.query import Query
 from werkzeug.security import generate_password_hash, check_password_hash
 
 from app import db
@@ -99,7 +100,7 @@ class User(UserMixin, db.Model):
         return check_password_hash(self.password_hash, password)
 
     def __repr__(self):
-        return f"<User {repr(self.email)}>"
+        return f"<User {self.id} {repr(self.email)}>"
 
 
 class Tag(db.Model):
@@ -165,15 +166,16 @@ class Snippet(db.Model):
         return json
 
     @staticmethod
-    def get_by_week(user: User, year: int, week: int) -> Snippet:
+    def get_by_week(user_id: str, year: int, week: int) -> Optional[Snippet]:
+        """Returns the specified snippet (or None if it does not exist)."""
         snippet = Snippet.query.filter_by(
-            user_id=user.id, year=year, week=week
+            user_id=user_id, year=year, week=week
         )
         return snippet.first()
 
     @staticmethod
     def update(user: User, year: int, week: int, text: str, tags: List[str]):
-        snippet = Snippet.get_by_week(user, year, week)
+        snippet = Snippet.get_by_week(user.id, year, week)
         if not snippet:
             snippet = Snippet(user_id=user.id, year=year, week=week)
         snippet.text = text
@@ -182,8 +184,9 @@ class Snippet(db.Model):
         db.session.commit()
 
     @staticmethod
-    def get_all(user, tag_text=None):
-        query = user.snippets
+    def get_all(user_id, tag_text=None) -> Query:
+        """Returns a query for all the specified snippets."""
+        query = Snippet.query.filter_by(user_id=user_id)
         if tag_text:
             tag = Tag.query.filter_by(text=tag_text).first()
             tag_id = tag and tag.id
@@ -191,4 +194,4 @@ class Snippet(db.Model):
         return query.order_by(Snippet.year.desc(), Snippet.week.desc())
 
     def __repr__(self):
-        return f"<Snippet {repr(self.user.email)} {self.year} {self.week}>"
+        return f"<Snippet {self.id} {repr(self.user.email)} {self.year} {self.week}>"

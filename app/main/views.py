@@ -43,7 +43,7 @@ def render_snippet(md: markdown.Markdown, snippet: Snippet) -> RenderedSnippet:
 def render_snippet_form(
     form: SnippetsForm, user: User, year: int, week: int
 ) -> Text:
-    snippet = Snippet.get_by_week(user, year, week)
+    snippet = Snippet.get_by_week(user.id, year, week)
     text = snippet and snippet.text
     form.text.data = text
     form.year.data = year
@@ -91,7 +91,7 @@ def edit(year=None, week=None) -> Union[Response, Text]:
 def history() -> Union[Response, Text]:
     page = request.args.get("page", 1, type=int)
     md = markdown.Markdown()
-    snippets = Snippet.get_all(current_user, request.args.get("tag"))
+    snippets = Snippet.get_all(current_user.id, request.args.get("tag"))
     pagination = snippets.paginate(
         page,
         per_page=current_app.config["LASTWEEK_SNIPPETS_PER_PAGE"],
