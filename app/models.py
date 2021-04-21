@@ -32,9 +32,9 @@ class User(UserMixin, db.Model):
     def to_json(self):
         (year, week) = this_week()
         json = {
-            "id": self.id,
+            "name": self.name,
             "email": self.email,
-            "member_since": self.member_since,
+            "member_since": self.member_since.isoformat(),
         }
         return json
 
@@ -169,7 +169,7 @@ class Snippet(db.Model):
             ),
             "year": self.year,
             "week": self.week,
-            "text": self.text,
+            "text": self.text or "",
             "tags": [tag.text for tag in self.tags],
         }
         return json
