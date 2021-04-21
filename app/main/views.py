@@ -81,7 +81,7 @@ def edit(year=None, week=None) -> Union[Response, Text]:
     form = SnippetsForm()
     if form.validate_on_submit():
         tags = [text.strip() for text in form.tags.data.split(",")]
-        Snippet.update(current_user, year, week, form.text.data, tags)
+        Snippet.update(current_user.id, year, week, form.text.data, tags)
         return redirect(url_for(".edit", year=year, week=week))
     return render_snippet_form(form, current_user, year, week)
 

@@ -146,21 +146,30 @@ class Snippet(db.Model):
     )
 
     @staticmethod
-    def from_json(json):
+    def load_from_json(user_id, json):
+        """Loads a snippet from a dictionary.
+
+        If an existing snippet with this date is found, that one is updated,
+        committed to the database, and returned. Otherwise a new instance is
+        populated, committed to the database, and returned.
+        """
+        year = json["year"]
+        week = json["week"]
         text = json.get("text", "")
         tags = json.get("tags", [])
+        return Snippet.update(user_id, year, week, text, tags)
 
     def to_json(self):
+        """Serializes this snippet to a dictionary."""
         json = {
-            "user_id": self.user_id,
             "url": url_for(
                 "api.get_week",
                 year=self.year,
                 week=self.week,
             ),
-            "text": self.text,
             "year": self.year,
             "week": self.week,
+            "text": self.text,
             "tags": [tag.text for tag in self.tags],
         }
         return json
@@ -174,14 +183,15 @@ class Snippet(db.Model):
         return snippet.first()
 
     @staticmethod
-    def update(user: User, year: int, week: int, text: str, tags: List[str]):
-        snippet = Snippet.get_by_week(user.id, year, week)
+    def update(user_id: str, year: int, week: int, text: str, tags: List[str]):
+        snippet = Snippet.get_by_week(user_id, year, week)
         if not snippet:
-            snippet = Snippet(user_id=user.id, year=year, week=week)
+            snippet = Snippet(user_id=user_id, year=year, week=week)
         snippet.text = text
         snippet.tags = Tag.get_all(tags)
         db.session.add(snippet)
         db.session.commit()
+        return snippet
 
     @staticmethod
     def get_all(user_id, tag_text=None) -> Query:
@@ -194,4 +204,4 @@ class Snippet(db.Model):
         return query.order_by(Snippet.year.desc(), Snippet.week.desc())
 
     def __repr__(self):
-        return f"<Snippet {self.id} {repr(self.user.email)} {self.year} {self.week}>"
+        return f"<Snippet {self.id} {self.user.email} {self.text} {self.year} {self.week}>"

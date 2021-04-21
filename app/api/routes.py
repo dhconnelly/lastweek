@@ -72,5 +72,5 @@ def update_week(year=None, week=None):
         (year, week) = this_week()
     text = request.json.get("text", "")
     tags = request.json.get("tags", [])
-    Snippet.update(g.current_user, year, week, text, tags)
+    Snippet.update(g.current_user.id, year, week, text, tags)
     return jsonify({"success": True})
