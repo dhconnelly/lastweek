@@ -32,7 +32,7 @@ class TestingConfig(Config):
     SECRET_KEY = "testing secret key"
     SQLALCHEMY_DATABASE_URI = "sqlite://"
     WTF_CSRF_ENABLED = False
-    SERVER_NAME = "lastweek-test"
+    SERVER_NAME = "lastweek-test.localdomain"
 
 
 class ProductionConfig(Config):
