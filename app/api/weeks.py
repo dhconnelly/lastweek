@@ -1,6 +1,7 @@
+from flask.helpers import url_for
 from app.api.errors import ValidationError
 from flask import jsonify
-from flask.globals import g, request
+from flask.globals import current_app, g, request
 
 from . import api
 from app.models import Snippet, get_snippets, lookup_snippet, update_snippet
@@ -9,10 +10,28 @@ from core.date_utils import is_valid_iso_week, this_week
 
 @api.route("/weeks/")
 def get_weeks():
-    tag = request.args.get("tag")
-    snippets = get_snippets(g.current_user, tag_text=tag)
-    # TODO: paginate
-    return jsonify([snippet.to_json() for snippet in snippets])
+    page = request.args.get("page", 1, type=int)
+    snippets = get_snippets(g.current_user, tag_text=request.args.get("tag"))
+    pagination = snippets.paginate(
+        page,
+        per_page=current_app.config["LASTWEEK_SNIPPETS_PER_PAGE"],
+        error_out=True,
+    )
+    snippets = pagination.items
+    prev = None
+    if pagination.has_prev:
+        prev = url_for("api.get_weeks", page=page - 1)
+    next = None
+    if pagination.has_next:
+        next = url_for("api.get_weeks", page=page + 1)
+    return jsonify(
+        {
+            "weeks": [snippet.to_json() for snippet in snippets],
+            "prev_url": prev,
+            "next_url": next,
+            "count": pagination.total,
+        }
+    )
 
 
 @api.route("/weeks/current")
