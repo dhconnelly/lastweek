@@ -87,3 +87,6 @@ class UserModelTest(unittest.TestCase):
         sleep(1)  # TODO: seems bad
         self.assertFalse(u.confirm(token))
         self.assertFalse(u.confirmed)
+
+    # TODO: test reset
+    # TODO: test auth

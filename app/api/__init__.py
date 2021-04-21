@@ -2,7 +2,7 @@ from flask import Blueprint
 
 api = Blueprint("api", __name__)
 
-from . import authentication, errors, users, weeks
+from . import authentication, errors, routes
 
 # routes:
 # /user (GET) return user metadata

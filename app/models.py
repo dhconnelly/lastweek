@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import List
 from flask.globals import current_app
 from flask.helpers import url_for
@@ -105,6 +107,17 @@ class Tag(db.Model):
     id = db.Column(db.Integer, primary_key=True, nullable=False)
     text = db.Column(db.UnicodeText, nullable=False)
 
+    @staticmethod
+    def get_or_make_tags(texts: List[str]) -> List[Tag]:
+        tags = []
+        for text in set(texts):
+            tag = Tag.query.filter_by(text=text).first()
+            if not tag:
+                tag = Tag(text=text)
+                db.session.add(tag)
+            tags.append(tag)
+        return tags
+
     def __repr__(self):
         return f"<Tag {self.id} {self.text}>"
 
@@ -151,42 +164,31 @@ class Snippet(db.Model):
         }
         return json
 
+    @staticmethod
+    def get_by_week(user: User, year: int, week: int) -> Snippet:
+        snippet = Snippet.query.filter_by(
+            user_id=user.id, year=year, week=week
+        )
+        return snippet.first()
+
+    @staticmethod
+    def update(user: User, year: int, week: int, text: str, tags: List[str]):
+        snippet = Snippet.get_by_week(user, year, week)
+        if not snippet:
+            snippet = Snippet(user_id=user.id, year=year, week=week)
+        snippet.text = text
+        snippet.tags = Tag.get_or_make_tags(tags)
+        db.session.add(snippet)
+        db.session.commit()
+
+    @staticmethod
+    def get_all(user, tag_text=None):
+        query = user.snippets
+        if tag_text:
+            tag = Tag.query.filter_by(text=tag_text).first()
+            tag_id = tag and tag.id
+            query = query.join(tagged_snippets).filter_by(tag_id=tag_id)
+        return query.order_by(Snippet.year.desc(), Snippet.week.desc())
+
     def __repr__(self):
         return f"<Snippet {repr(self.user.email)} {self.year} {self.week}>"
-
-
-def lookup_snippet(user: User, year: int, week: int) -> Snippet:
-    snippet = Snippet.query.filter_by(user_id=user.id, year=year, week=week)
-    return snippet.first()
-
-
-def get_or_make_tags(texts: List[str]) -> List[Tag]:
-    tags = []
-    for text in set(texts):
-        tag = Tag.query.filter_by(text=text).first()
-        if not tag:
-            tag = Tag(text=text)
-            db.session.add(tag)
-        tags.append(tag)
-    return tags
-
-
-def update_snippet(
-    user: User, year: int, week: int, text: str, tags: List[str]
-):
-    snippet = lookup_snippet(user, year, week)
-    if not snippet:
-        snippet = Snippet(user_id=user.id, year=year, week=week)
-    snippet.text = text
-    snippet.tags = get_or_make_tags(tags)
-    db.session.add(snippet)
-    db.session.commit()
-
-
-def get_snippets(user, tag_text=None):
-    query = user.snippets
-    if tag_text:
-        tag = Tag.query.filter_by(text=tag_text).first()
-        tag_id = tag and tag.id
-        query = query.join(tagged_snippets).filter_by(tag_id=tag_id)
-    return query.order_by(Snippet.year.desc(), Snippet.week.desc())

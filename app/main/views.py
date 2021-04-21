@@ -1,26 +1,24 @@
-from app.api.errors import ValidationError
-from core.date_utils import is_valid_iso_week, this_week
+from dataclasses import dataclass
 from datetime import date
-from typing import NamedTuple, Text, Union
+from typing import Text, Union
 
 from flask import render_template, redirect, url_for, request, current_app
 from werkzeug.wrappers import Response
 from flask_login import login_required, current_user
 import markdown
 
+from app.api.errors import ValidationError
+from core.date_utils import is_valid_iso_week, this_week
 from app.main import main
 from app.models import (
     Snippet,
     User,
-    get_snippets,
-    lookup_snippet,
-    update_snippet,
 )
-from app import db
 from app.main.forms import SnippetsForm
 
 
-class RenderedSnippet(NamedTuple):
+@dataclass
+class RenderedSnippet:
     email: str
     id: int
     week_begin: date
@@ -45,7 +43,7 @@ def render_snippet(md: markdown.Markdown, snippet: Snippet) -> RenderedSnippet:
 def render_snippet_form(
     form: SnippetsForm, user: User, year: int, week: int
 ) -> Text:
-    snippet = lookup_snippet(user, year, week)
+    snippet = Snippet.get_by_week(user, year, week)
     text = snippet and snippet.text
     form.text.data = text
     form.year.data = year
@@ -83,7 +81,7 @@ def edit(year=None, week=None) -> Union[Response, Text]:
     form = SnippetsForm()
     if form.validate_on_submit():
         tags = [text.strip() for text in form.tags.data.split(",")]
-        update_snippet(current_user, year, week, form.text.data, tags)
+        Snippet.update(current_user, year, week, form.text.data, tags)
         return redirect(url_for(".edit", year=year, week=week))
     return render_snippet_form(form, current_user, year, week)
 
@@ -93,7 +91,7 @@ def edit(year=None, week=None) -> Union[Response, Text]:
 def history() -> Union[Response, Text]:
     page = request.args.get("page", 1, type=int)
     md = markdown.Markdown()
-    snippets = get_snippets(current_user, request.args.get("tag"))
+    snippets = Snippet.get_all(current_user, request.args.get("tag"))
     pagination = snippets.paginate(
         page,
         per_page=current_app.config["LASTWEEK_SNIPPETS_PER_PAGE"],
