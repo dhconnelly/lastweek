@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-from typing import List
+from typing import List, Optional
 from flask.globals import current_app
 from flask.helpers import url_for
 from flask_login import UserMixin
 from itsdangerous import TimedJSONWebSignatureSerializer as TimedSerializer
+from sqlalchemy.orm.query import Query
 from werkzeug.security import generate_password_hash, check_password_hash
 
 from app import db
@@ -99,7 +100,7 @@ class User(UserMixin, db.Model):
         return check_password_hash(self.password_hash, password)
 
     def __repr__(self):
-        return f"<User {repr(self.email)}>"
+        return f"<User {self.id} {repr(self.email)}>"
 
 
 class Tag(db.Model):
@@ -108,7 +109,7 @@ class Tag(db.Model):
     text = db.Column(db.UnicodeText, nullable=False)
 
     @staticmethod
-    def get_or_make_tags(texts: List[str]) -> List[Tag]:
+    def get_all(texts: List[str]) -> List[Tag]:
         tags = []
         for text in set(texts):
             tag = Tag.query.filter_by(text=text).first()
@@ -145,45 +146,57 @@ class Snippet(db.Model):
     )
 
     @staticmethod
-    def from_json(json):
+    def load_from_json(user_id, json):
+        """Loads a snippet from a dictionary.
+
+        If an existing snippet with this date is found, that one is updated,
+        committed to the database, and returned. Otherwise a new instance is
+        populated, committed to the database, and returned.
+        """
+        year = json["year"]
+        week = json["week"]
         text = json.get("text", "")
         tags = json.get("tags", [])
+        return Snippet.update(user_id, year, week, text, tags)
 
     def to_json(self):
+        """Serializes this snippet to a dictionary."""
         json = {
-            "user_id": self.user_id,
             "url": url_for(
                 "api.get_week",
                 year=self.year,
                 week=self.week,
             ),
-            "text": self.text,
             "year": self.year,
             "week": self.week,
+            "text": self.text,
             "tags": [tag.text for tag in self.tags],
         }
         return json
 
     @staticmethod
-    def get_by_week(user: User, year: int, week: int) -> Snippet:
+    def get_by_week(user_id: str, year: int, week: int) -> Optional[Snippet]:
+        """Returns the specified snippet (or None if it does not exist)."""
         snippet = Snippet.query.filter_by(
-            user_id=user.id, year=year, week=week
+            user_id=user_id, year=year, week=week
         )
         return snippet.first()
 
     @staticmethod
-    def update(user: User, year: int, week: int, text: str, tags: List[str]):
-        snippet = Snippet.get_by_week(user, year, week)
+    def update(user_id: str, year: int, week: int, text: str, tags: List[str]):
+        snippet = Snippet.get_by_week(user_id, year, week)
         if not snippet:
-            snippet = Snippet(user_id=user.id, year=year, week=week)
+            snippet = Snippet(user_id=user_id, year=year, week=week)
         snippet.text = text
-        snippet.tags = Tag.get_or_make_tags(tags)
+        snippet.tags = Tag.get_all(tags)
         db.session.add(snippet)
         db.session.commit()
+        return snippet
 
     @staticmethod
-    def get_all(user, tag_text=None):
-        query = user.snippets
+    def get_all(user_id, tag_text=None) -> Query:
+        """Returns a query for all the specified snippets."""
+        query = Snippet.query.filter_by(user_id=user_id)
         if tag_text:
             tag = Tag.query.filter_by(text=tag_text).first()
             tag_id = tag and tag.id
@@ -191,4 +204,4 @@ class Snippet(db.Model):
         return query.order_by(Snippet.year.desc(), Snippet.week.desc())
 
     def __repr__(self):
-        return f"<Snippet {repr(self.user.email)} {self.year} {self.week}>"
+        return f"<Snippet {self.id} {self.user.email} {self.text} {self.year} {self.week}>"
