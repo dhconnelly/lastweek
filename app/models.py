@@ -108,7 +108,7 @@ class Tag(db.Model):
     text = db.Column(db.UnicodeText, nullable=False)
 
     @staticmethod
-    def get_or_make_tags(texts: List[str]) -> List[Tag]:
+    def get_all(texts: List[str]) -> List[Tag]:
         tags = []
         for text in set(texts):
             tag = Tag.query.filter_by(text=text).first()
@@ -177,7 +177,7 @@ class Snippet(db.Model):
         if not snippet:
             snippet = Snippet(user_id=user.id, year=year, week=week)
         snippet.text = text
-        snippet.tags = Tag.get_or_make_tags(tags)
+        snippet.tags = Tag.get_all(tags)
         db.session.add(snippet)
         db.session.commit()
 
