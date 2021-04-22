@@ -24,9 +24,7 @@ class DevelopmentConfig(Config):
     DEV = True
     DEBUG = True
     SECRET_KEY = "dev secret key"
-    SQLALCHEMY_DATABASE_URI = environ.get(
-        "DATABASE_URL"
-    ) or "sqlite:///" + path.join(basedir, "data.sqlite")
+    SQLALCHEMY_DATABASE_URI = environ.get("DATABASE_URL") or "sqlite:///" + path.join(basedir, "data.sqlite")
 
 
 class TestingConfig(Config):
@@ -36,10 +34,16 @@ class TestingConfig(Config):
     WTF_CSRF_ENABLED = False
     SERVER_NAME = "lastweek-test.localdomain"
 
+RDS_HOSTNAME = environ.get("RDS_HOSTNAME")
+RDS_PORT = environ.get("RDS_PORT")
+RDS_DB_NAME = environ.get("RDS_DB_NAME")
+RDS_USERNAME = environ.get("RDS_USERNAME")
+RDS_PASSWORD = environ.get("RDS_PASSWORD")
+RDS_SQLALCHEMY_URL = f"postgresql://{RDS_USERNAME}:{RDS_PASSWORD}@{RDS_HOSTNAME}:{RDS_PORT}/{RDS_DB_NAME}"
 
 class ProductionConfig(Config):
     SECRET_KEY = environ.get("SECRET_KEY")
-    SQLALCHEMY_DATABASE_URI = environ.get("DATABASE_URL")
+    SQLALCHEMY_DATABASE_URI = environ.get("DATABASE_URL") or RDS_SQLALCHEMY_URL
 
 
 config = {
