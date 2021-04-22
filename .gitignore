@@ -138,3 +138,8 @@ dmypy.json
 cython_debug/
 data.sqlite
 .vscode/launch.json
+
+# Elastic Beanstalk Files
+.elasticbeanstalk/*
+!.elasticbeanstalk/*.cfg.yml
+!.elasticbeanstalk/*.global.yml
