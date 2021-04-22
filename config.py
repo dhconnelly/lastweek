@@ -24,7 +24,9 @@ class DevelopmentConfig(Config):
     DEV = True
     DEBUG = True
     SECRET_KEY = "dev secret key"
-    SQLALCHEMY_DATABASE_URI = "sqlite:///" + path.join(basedir, "data.sqlite")
+    SQLALCHEMY_DATABASE_URI = environ.get(
+        "DATABASE_URL"
+    ) or "sqlite:///" + path.join(basedir, "data.sqlite")
 
 
 class TestingConfig(Config):
