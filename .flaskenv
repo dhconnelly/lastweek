@@ -1,1 +1,1 @@
-FLASK_APP=lastweek.py
+FLASK_APP=application.py
