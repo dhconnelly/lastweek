@@ -7,6 +7,12 @@ accomplishments in Markdown format and tag them, then see all your past weeks
 in the History view. Clicking a tag in History view will filter to show only
 weeks tagged with the given tag filter.
 
+## Why
+
+To review basic web development and Python. I followed [Miguel
+Grinberg](https://blog.miguelgrinberg.com/)'s excellent book [Flask Web
+Development](https://learning.oreilly.com/library/view/flask-web-development/9781491991725/), 2nd edition.
+
 ## Usage
 
 First activate the virtual environment:
@@ -37,3 +43,8 @@ To run the app locally in development mode with the sqlite database:
 
 And then open http://127.0.0.1:5000 in your browser. (Note that the new user
 confirmation flow with email tokens is disabled in development mode.)
+
+## License
+
+MIT License
+Copyright (c) 2021 Daniel Connelly
