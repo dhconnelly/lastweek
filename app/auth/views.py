@@ -1,4 +1,6 @@
 from datetime import date
+
+from flask.globals import current_app
 from app.email import send_email
 from flask import render_template, request, redirect
 from flask.helpers import flash, url_for
@@ -125,11 +127,14 @@ def register():
         password=form.password.data,
         member_since=date.today(),
     )
+    if current_app.config["DEV"]:
+        user.confirmed = True
     db.session.add(user)
     db.session.commit()
-    token = user.generate_confirmation_token()
-    send_token(user, token, "Confirm your account", "auth/email/confirm")
-    flash("A confirmation link has been sent to you via email")
+    if not current_app.config["DEV"]:
+        token = user.generate_confirmation_token()
+        send_token(user, token, "Confirm your account", "auth/email/confirm")
+        flash("A confirmation link has been sent to you via email")
     return redirect(url_for("auth.login"))
 
 
