@@ -1,5 +1,14 @@
 # lastweek
 
+## What
+
+A simple web app for tracking what you did each week. You can file the week's
+accomplishments in Markdown format and tag them, then see all your past weeks
+in the History view. Clicking a tag in History view will filter to show only
+weeks tagged with the given tag filter.
+
+## Usage
+
 First activate the virtual environment:
 
     . venv/bin/activate
