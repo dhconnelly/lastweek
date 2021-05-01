@@ -15,9 +15,11 @@ Development](https://learning.oreilly.com/library/view/flask-web-development/978
 
 ## Usage
 
-First activate the virtual environment:
+First, create and activate the virtual environment and install dependencies:
 
+    python3 -m venv venv
     . venv/bin/activate
+    pip install -r requirements.txt
 
 To run the unit tests:
 
